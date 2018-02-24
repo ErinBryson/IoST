@@ -1,4 +1,9 @@
 /*************************************************************
+  
+  Author:             Erin Bryson
+  Date Last Modified: February 24, 2018
+  
+**************************************************************
   Download latest Blynk library here:
     https://github.com/blynkkk/blynk-library/releases/latest
 
@@ -14,72 +19,61 @@
                                 http://twitter.com/blynk_app
 
   Blynk library is licensed under MIT license
-  This example code is in public domain.
+
+  This code is in public domain.
 
  *************************************************************
 
   You’ll need:
    - Blynk App (download from AppStore or Google Play)
-   - Arduino 101 board (or like)
+   - Arduino 101 or compatable board
+      (Adafruit Feather M0 Board used)
    - Decide how to connect to Blynk
      (USB, Ethernet, Wi-Fi, Bluetooth, ...)
+   - Individually Addressable LED string compatable
+     with Adafruit_Neopixel library. 
+      (WS2811 LEDs used)
+   - 5V Wall Adapter
+      (Used to power WS2811)
+   - 1x 560 Ohm 5% 1/4W Resistor
+      (Can be slightly lower of higher. Used for Data
+       Line.)
+   - Breadboard
+   - Male to Male Jumper Wires
+   - 1000 uF Capacitor
+      (Power Supply Noise Reduction)
+
+  Required Equipment for Adafruit Feather M0 Board
+   - 1x USB Cable - A/Micro B
+   - 1x 3.3v to 5v Logic Level Shifter
+  
+  Optional Hardware Used
+   - 2x 10K 5% 1/4W Resistors
+      (Used in Safety Circuit)
+   - 1x Diffused 10mm Red LED
+      (5V Power Indicator: OFF)
+   - 1x Diffused 10mm Green LED
+      (5V Power Indicator: ON)
+   - 1x Breadboard-friendly SPDT Slide Switch
+      (5V Power Switch)
+   - 1x FeatherWing OLED - 128x32 OLED
 
   There is a bunch of great example sketches included to show you how to get
-  started. Think of them as LEGO bricks  and combine them as you wish.
+  started. Think of them as LEGO bricks and combine them as you wish.
   For example, take the Ethernet Shield sketch and combine it with the
   Servo example, or choose a USB sketch and add a code from SendData
   example.
- *************************************************************/
-
-                              /*****/
-
-/**************************** Changes *************************
- *  
- * Nov 12, 2017
- *    - String now prints to terminal
- *    - Length of string now prints to terminal
- *    - Value of param.asStr() passed to new string UserMessage
- *    - For-loop added to cycle through each letter in UserMessage
- *    - Function switchLights(char) added
- *  
- *  Nov 13, 2017
- *    - NeoPixel Library Added
- *    - Adafruit_NeoPixel object strip created
- *    - Parameters for strip created
- *    
- * Nov 14, 2017
- *    - Added loop counter to see if blynk.run() is a looped
- *      function. Loop counter prints and increments, therefore
- *      Blynk.Run() is NOT a looped function! Instead,
- *      Blynk.Run() will interrupt the loop() function.
- *    - Added bool BlynkIsCalled to BLYNK_WRITE(V1) function.
- *      Checks to see if Blynk.run() has been called. 
- *    - Blynk.run() placed inside Do-While. Checks to see if 
- *      BlynkIsCalled = true. If it does not, Blynk.run() is
- *      run again.
- *    - String UserInput changed to Global Varialbe
- *    - Global Variable int stringLength Added. 
- *    - Length of blynk string passed to stringLength.
- *    - UserMessage.ToUpperCase() moved inside loop().
- *    - For-loop with function call switchLight(char) moved
- *      inside loop().
- * 
- * Nov. 20, 2017
- *    - Added void AdjustTimeDelay(int& DELAY) to adjust
- *      DelayTime with respect to StringLength
- *    - BLynk.run() taken out of do-while loop.
- *    - do-while loop removed.
- *    - bool BlynkIsCalled changed to InputStringReceived for
- *      technical clarification
- *    - Adafruit_GHX library added
- *    - Adafruit_SSD1306 library added
- * 
- **************************************************************/
+ *************************************************************
+ 
+                *** INTENTIONAL BLANK SPACE ***
+  
+ *********************** MAIN PROGRAM ************************/
 
 // Definitions
 #define BLYNK_PRINT Serial
-#define DATA_PIN 6
-#define BRIGHTNESS 70
+#define DATA_PIN 6          // Data pin for WS2811 LEDs
+#define BRIGHTNESS 70       // Base brightness for WS2811 LEDs
+#define PIXEL_COUNT 29      // Number of Pixels in strip.
 
 #ifdef __AVR__
   #include <avr/power.h>
@@ -100,8 +94,9 @@
 //   NEO_KHZ400  400 KHz (classic 'v1' (not v2) FLORA pixels, WS2811 drivers)
 //   NEO_GRB     Pixels are wired for GRB bitstream (most NeoPixel products)
 //   NEO_RGB     Pixels are wired for RGB bitstream (v1 FLORA pixels, not v2)
-Adafruit_NeoPixel strip = Adafruit_NeoPixel(50, DATA_PIN, NEO_RGB + NEO_KHZ800);
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(PIXEL_COUNT, DATA_PIN, NEO_RGB + NEO_KHZ800);
 
+// Check hight of OLED screen
 #if (SSD1306_LCDHEIGHT != 32)
  #error("Height incorrect, please fix Adafruit_SSD1306.h!");
 #endif
@@ -110,20 +105,20 @@ Adafruit_SSD1306 OLED_Display = Adafruit_SSD1306();
 
 // You should get Auth Token in the Blynk App.
 // Go to the Project Settings (nut icon).
-char auth[] = "ad333543e26345918800848c996edabe";
+char auth[] = "Insert Token Here";
 
 // Your WiFi credentials.
 // Set password to "" for open networks.
-char ssid[] = "MSU_IOT";
-char pass[] = "";
+char ssid[] = "Insert Network Name Here";
+char pass[] = "Insert Network Password Here";
 
 // Attach virtual serial terminal to Virtual Pin V1
 WidgetTerminal terminal(V1);
 
 // Variables to be passed from Blynk.run() to loop()
-String UserMessage;                 // String passed from Blynk string
-bool InputStringReceived = false;   // Checks to see if Blynk.run() is callled
-int stringLength = 0;               // Length of string from blynk passed
+String  UserMessage;                    // String passed from Blynk string
+bool    InputStringReceived = false;    // Checks to see if Blynk.run() is callled
+int     stringLength = 0;               // Length of string from blynk passed
 
 //============================== FUNCTIONS =====================================
 
@@ -433,7 +428,7 @@ void AdjustTimeDelay(int& DELAY, int& stringLength){
     case 4:
     case 5:
       break;
-    // Reduce DelayTime by 100 milliseconds
+    // Reduce DelayTime by 250 milliseconds
     case 6:
     case 7:
     case 8:
@@ -441,7 +436,7 @@ void AdjustTimeDelay(int& DELAY, int& stringLength){
     case 10:
       DELAY -= 250;
       break;
-    // Reduce DelayTime by 200 milliseconds
+    // Reduce DelayTime by 500 milliseconds
     case 11:
     case 12:
     case 13:
@@ -449,7 +444,7 @@ void AdjustTimeDelay(int& DELAY, int& stringLength){
     case 15:
       DELAY -= 500;
       break;
-    // Reduce DelayTime by 300 milliseconds
+    // Reduce DelayTime by 625 milliseconds
     case 16:
     case 17:
     case 18:
@@ -457,6 +452,7 @@ void AdjustTimeDelay(int& DELAY, int& stringLength){
     case 20:
       DELAY -= 625;
       break;
+    // Reduce DelayTime by 615 milliseconds
     case 21:
     case 22:
     case 23:
@@ -465,6 +461,7 @@ void AdjustTimeDelay(int& DELAY, int& stringLength){
     case 26:
       DELAY -= 615;
       break;
+    // Error case: String too large
     default:
       DELAY = 0;
       break;
@@ -527,16 +524,20 @@ void setup()
   //Configure pins for Adafruit ATWINC1500 Feather
   WiFi.setPins(8,7,4,2);
 
+  // Prepare data pin for NeoPixel Output
+  strip.setBrightness(BRIGHTNESS);
+  strip.begin();
 
+  for(int i = 0; i < strip.numPixels(); i++){
+    strip.setPixelColor(i, 0, 0, 0);
+    strip.show();
+  }
   
   // Debug console
   Serial.begin(9600);
   
   // by default, we'll generate the high voltage from the 3.3v line internally! (neat!)
   OLED_Display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  // initialize with the I2C addr 0x3C (for the 128x32)
-  // init done
-  //Serial.println("OLED begun");
-  //delay(5000);
 
 // Show image buffer on the display hardware.
 // Since the buffer is intialized with an Adafruit splashscreen
@@ -544,7 +545,7 @@ void setup()
   OLED_Display.display();
   delay(2000);
 
-  // Clear the buffer.
+// Clear the buffer.
   ResetOLED();
 
 // Set up OLED display setting
@@ -557,12 +558,12 @@ void setup()
   OLED_Display.display();
 
   Blynk.begin(auth, ssid, pass);
-  // You can also specify server:
-  //Blynk.begin(auth, ssid, pass, "blynk-cloud.com", 8442);
-  //Blynk.begin(auth, ssid, pass, IPAddress(192,168,1,100), 8442);
+// You can also specify server:
+//Blynk.begin(auth, ssid, pass, "blynk-cloud.com", 8442);
+//Blynk.begin(auth, ssid, pass, IPAddress(192,168,1,100), 8442);
 
-  // This will print Blynk Software version to the Terminal Widget when
-  // your hardware gets connected to Blynk Server
+// This will print Blynk Software version to the Terminal Widget when
+// your hardware gets connected to Blynk Server
   terminal.println(F("Blynk v" BLYNK_VERSION ": Device started"));
   terminal.println(F("-------------"));
   terminal.println(F("Send messages from the Upside-Down!"));
@@ -570,49 +571,36 @@ void setup()
   terminal.flush();
 
 // Clear OLED display
-
   ResetOLED();
 
+// Pass IP address object
   IPAddress myIP = WiFi.localIP();
-/*  
-  // Show image buffer on the display hardware.
-  // Since the buffer is intialized with an Adafruit splashscreen
-  // internally, this will display the splashscreen.
-  OLED_Display.display();
-  delay(2000);
 
-  // Clear the buffer.
-  OLED_Display.clearDisplay();
-  OLED_Display.display();
-  
-  OLED_Display.setTextSize(1);
-  OLED_Display.setTextColor(WHITE);
-  OLED_Display.setCursor(0, 0);
-*/
+// Display network information
   OLED_Display.println("Connected to network");
-  OLED_Display.print("     ");
+  OLED_Display.print("  ");
   OLED_Display.println(ssid);
   OLED_Display.println("IP Address:");
-  OLED_Display.print("     ");
+  OLED_Display.print("  ");
   OLED_Display.println(myIP);
   OLED_Display.display();
 
   delay(5000);
 
+// Clear buffer
   ResetOLED();
 
   delay(1000);
+}
 
 //========================== MAIN LOOP ====================================
 
-}
-
 void loop() {
-  static int counter = 0;
+  static int counter = 0;   
   int DelayTime = 1000;
   bool Error = false;
-  static bool disconnected = false;
-  static bool initialRun = true;
+  static bool disconnected = false; // Indicates if Blynk disconnect occurs
+  static bool initialRun = true;    // 
 
   if (initialRun){
     ResetOLED();
@@ -623,46 +611,60 @@ void loop() {
 
   //if (Blynk.connected())
     Blynk.run();
-  if (!Blynk.connected()) {
+  if (!Blynk.connected()&& !disconnected ) {
     ResetOLED();
     OLED_Display.println("Reconnecting...");
     OLED_Display.display();
     disconnected = true;
   }
 
+// Display if Reconnected
   if (Blynk.connected() && disconnected){
     ResetOLED();
     OLED_Display.println("Reconnected!");
     OLED_Display.display();
+    delay(750);
+    ResetOLED();
     disconnected = false;
   }
-  
+
+// Standby light display options.
+// Cycles through standby procedures
   if (!InputStringReceived){
-    switch(counter % 5){
+    switch(counter){
+      // Color Wipe Red
       case 0:
         colorWipe(strip.Color(255, 0, 0), 50);
+        counter++;
         break;
+
+      // Color Wipe Yellow
       case 1:
-        colorWipe(strip.Color(0, 255, 0), 50);
+        colorWipe(strip.Color(255, 165, 0), 50);
+        counter++;
         break;
+        
+      // Color Wipe Green
       case 2:
-        colorWipe(strip.Color(0, 0, 255), 50);
+        colorWipe(strip.Color(0, 255, 0), 50);
+        counter++;
         break;
+
       case 3:
-        rainbow(5);
+        colorWipe(strip.Color(0, 0, 255), 50);
+        counter++;
         break;
+
       case 4:
           rainbowCycle(5);
           counter = 0;
           break;
     }
-
-    counter++;
     
     Error = true;
-   // return;
   }
 
+// if input is received, continue procedure
   if (!Error){
     ResetOLED(); 
 
@@ -679,23 +681,10 @@ void loop() {
 
     AdjustTimeDelay(DelayTime, stringLength);
   }
-  /*
-// Prevents lights from turning on if string is too large
-  if((DelayTime == 0) && !Error){
-    OLED_Display.println("String too large!");
-    OLED_Display.display();
-    
-    delay(500);
-  
-    // Reset OLED screen
-    ResetOLED();
-    
-    InputStringReceived = false;
-    counter = 0;
-    //return;
-  }
-  */
-    if((DelayTime > 0) && (!Error)){
+
+// If string has a time delay greater than zero and
+// no error occurs, continue with procedure
+  if((DelayTime > 0) && (!Error)){
     OLED_Display.print("Displaying user input");
     OLED_Display.display();
   
@@ -709,7 +698,8 @@ void loop() {
 
     delay(500);
 
-    // Print String to Serial Port
+    // Print String to Serial Port.
+    // Used for trouble shooting.
   /*
     Serial.print(UserMessage);
     Serial.print(" ");
